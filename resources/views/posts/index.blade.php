@@ -1,0 +1,113 @@
+<x-app-layout>
+    <div class="bg-slate-50 min-h-[calc(100vh-4rem)]">
+        <div class="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+
+            {{-- Header --}}
+            <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 text-orange-600 text-xs font-semibold">
+                        <span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span>
+                        พื้นที่แชร์ประสบการณ์ & ถาม-ตอบ
+                    </div>
+                    <h1 class="mt-3 text-2xl sm:text-3xl font-bold text-slate-900">
+                        กระทู้ล่าสุด
+                    </h1>
+                    <p class="mt-1 text-sm text-slate-500">
+                        โพสต์ที่เห็นในหน้านี้คือกระทู้ที่ผ่านการอนุมัติแล้วจากทีมแอดมิน ✅
+                    </p>
+                </div>
+
+                <div class="flex flex-col items-end gap-2">
+                    @auth
+                        <a href="{{ route('posts.create') }}"
+                           class="inline-flex items-center gap-2 px-4 py-2 rounded-full
+                                  bg-orange-500 text-white text-sm font-semibold shadow-sm
+                                  hover:bg-orange-600 transition">
+                            <span class="text-lg leading-none">＋</span>
+                            ตั้งกระทู้ใหม่
+                        </a>
+                    @endauth
+
+                    <form method="GET" action="{{ route('posts.index') }}" class="relative w-full sm:w-64">
+                        <input type="text" name="q" value="{{ request('q') }}"
+                               placeholder="ค้นหากระทู้ (ยังไม่ต้องทำจริงก็ได้)"
+                               class="w-full pl-9 pr-3 py-1.5 text-xs rounded-full border border-slate-200
+                                      bg-white/80 placeholder:text-slate-400 focus:outline-none focus:ring-2
+                                      focus:ring-orange-400/70 focus:border-orange-400">
+                        <span class="absolute inset-y-0 left-3 flex items-center text-slate-400 text-xs">🔍</span>
+                    </form>
+                </div>
+            </div>
+
+            {{-- Flash message --}}
+            @if(session('success'))
+                <div class="mb-6 px-4 py-3 rounded-xl bg-emerald-50 text-emerald-700 text-sm border border-emerald-100">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            {{-- Posts list --}}
+            @if($posts->count())
+                <div class="space-y-3">
+                    @foreach($posts as $post)
+                        <a href="{{ route('posts.show', $post->slug) }}"
+                           class="block group">
+                            <div class="flex flex-col gap-1.5 p-4 rounded-2xl border border-slate-100 bg-white
+                                        shadow-[0_4px_14px_rgba(15,23,42,0.04)]
+                                        hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(15,23,42,0.08)]
+                                        hover:border-orange-100 transition">
+                                <div class="flex items-center justify-between gap-3">
+                                    <h2 class="text-sm sm:text-base font-semibold text-slate-900 group-hover:text-orange-600 line-clamp-1">
+                                        {{ $post->title }}
+                                    </h2>
+                                    @if(!$post->is_published)
+                                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                                            รอแอดมินอนุมัติ
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <p class="text-xs text-slate-500 line-clamp-2">
+                                    {{ Str::limit(strip_tags($post->content), 140) }}
+                                </p>
+
+                                <div class="flex items-center justify-between text-[10px] text-slate-400 mt-1.5">
+                                    <div>
+                                        โดย
+                                        <span class="font-medium text-slate-600">
+                                            {{ $post->author?->name ?? 'ไม่ระบุผู้เขียน' }}
+                                        </span>
+                                        · {{ $post->created_at->diffForHumans() }}
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <span class="flex items-center gap-1">
+                                            💬 <span>{{ $post->comments_count ?? 0 }}</span>
+                                        </span>
+                                        <span class="flex items-center gap-1">
+                                            👁️ <span>{{ $post->views ?? 0 }}</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    @endforeach
+                </div>
+
+                <div class="mt-6">
+                    {{ $posts->links() }}
+                </div>
+            @else
+                <div class="mt-10 flex flex-col items-center gap-3 text-slate-400">
+                    <div class="text-4xl">📝</div>
+                    <div class="text-sm">ยังไม่มีกระทู้ที่เผยแพร่</div>
+                    @auth
+                        <a href="{{ route('posts.create') }}"
+                           class="text-xs text-orange-600 hover:text-orange-700">
+                            เริ่มตั้งกระทู้แรกของเว็บนี้เลย →
+                        </a>
+                    @endauth
+                </div>
+            @endif
+        </div>
+    </div>
+</x-app-layout>
