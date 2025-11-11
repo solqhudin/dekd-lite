@@ -1,4 +1,6 @@
-<x-app-layout>
+@extends('layouts.navigation')
+@section('title','กระทู้: ' . $post->title . ' • Engenius Group')
+@section('content')
     <div class="max-w-3xl mx-auto py-8">
         <h1 class="text-3xl font-bold mb-2">{{ $post->title }}</h1>
         <div class="text-xs text-gray-500 mb-6">
@@ -9,4 +11,4 @@
             {!! nl2br(e($post->content)) !!}
         </div>
     </div>
-</x-app-layout>
+@endsection
