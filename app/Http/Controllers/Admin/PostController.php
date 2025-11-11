@@ -12,15 +12,32 @@ class PostController extends Controller
     // แสดงรายการกระทู้ทั้งหมด (เน้นที่ pending ด้านบน) + แสดงประชาสัมพันธ์
     public function index()
     {
+        $pendingPosts = Post::with('author')
+            ->where('is_published', false)
         // ----- กระทู้ -----
         $pending = Post::where('is_published', false)
             ->latest()
             ->get();
 
-        $published = Post::where('is_published', true)
+        $publishedPosts = Post::with('author')
+            ->where('is_published', true)
             ->latest()
-            ->paginate(15);
+            ->get();
 
+        return view('admin.posts.index', compact('pendingPosts', 'publishedPosts'));
+    }
+
+    public function toggleStatus(Post $post)
+    {
+        $post->is_published = ! $post->is_published;
+        $post->save();
+
+        return back()->with(
+            'success',
+            $post->is_published
+                ? 'อนุมัติและเผยแพร่กระทู้เรียบร้อยแล้ว'
+                : 'ซ่อนกระทู้ออกจากหน้าเว็บเรียบร้อยแล้ว'
+        );
         // ----- ประชาสัมพันธ์ -----
         // รายการรอเผยแพร่ (โชว์สั้น ๆ พอเห็นภาพรวม)
         $annPending = Announcement::query()
