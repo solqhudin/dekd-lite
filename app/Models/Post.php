@@ -4,35 +4,40 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
 class Post extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'title',
         'slug',
         'content',
-        'user_id',
         'is_published',
+        'view_count',
+        'likes_count',
+        'dislikes_count',
     ];
-    
-    protected $casts = [
-        'is_published' => 'boolean',
-    ];
+
+    // binding ด้วย slug สำหรับ threads/{post}
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 
     public function author()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    protected static function booted()
+    public function comments()
     {
-        static::creating(function ($post) {
-            if (empty($post->slug)) {
-                $post->slug = Str::slug($post->title) . '-' . Str::random(6);
-            }
-        });
+        return $this->hasMany(Comment::class);
+    }
+
+    public function reactions()
+    {
+        return $this->hasMany(PostReaction::class);
     }
 }

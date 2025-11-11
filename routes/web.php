@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PostController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\CommentReactionController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
 
 /*
@@ -11,22 +13,22 @@ use App\Http\Controllers\Admin\PostController as AdminPostController;
 |--------------------------------------------------------------------------
 */
 
-// หน้าแรก = รายการกระทู้ที่อนุมัติแล้ว
 Route::get('/', [PostController::class, 'index'])->name('home');
-
-// /threads -> รายการกระทู้เหมือนกัน
 Route::get('/threads', [PostController::class, 'index'])->name('posts.index');
-
 
 /*
 |--------------------------------------------------------------------------
-| Authenticated: โปรไฟล์ / Dashboard / ตั้งกระทู้
+| Authenticated: dashboard / โปรไฟล์ / ตั้งกระทู้ / คอมเมนต์ / ปฏิกิริยา
 |--------------------------------------------------------------------------
+|
+| **สำคัญ:** route ที่เป็น path คงที่ เช่น /threads/create
+| ต้องมาก่อน /threads/{slug} เสมอ (ดูด้านล่าง)
+|
 */
 
 Route::middleware('auth')->group(function () {
 
-    // dashboard (จะใช้หรือไม่ใช้ก็ได้)
+    // Dashboard
     Route::get('/dashboard', fn () => view('dashboard'))->name('dashboard');
 
     // โปรไฟล์
@@ -34,23 +36,59 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // ตั้งกระทู้ใหม่ -> ต้องมาก่อน /threads/{slug}
-    Route::get('/threads/create', [PostController::class, 'create'])->name('posts.create');
-    Route::post('/threads', [PostController::class, 'store'])->name('posts.store');
-});
+    /*
+    |-------------------- ตั้งกระทู้ --------------------
+    */
 
+    // ฟอร์มตั้งกระทู้ใหม่
+    Route::get('/threads/create', [PostController::class, 'create'])->name('posts.create');
+
+    // บันทึกกระทู้ใหม่
+    Route::post('/threads', [PostController::class, 'store'])->name('posts.store');
+
+    /*
+    |-------------------- คอมเมนต์ --------------------
+    */
+
+    // คอมเมนต์ใหม่บนโพสต์ (ใช้ route model binding {post} = id)
+    Route::post('/threads/{post}/comments', [CommentController::class, 'store'])
+        ->name('comments.store');
+
+    // ตอบกลับคอมเมนต์
+    Route::post('/comments/{comment}/reply', [CommentController::class, 'reply'])
+        ->name('comments.reply');
+
+    // แก้ไขคอมเมนต์
+    Route::put('/comments/{comment}', [CommentController::class, 'update'])
+        ->name('comments.update');
+
+    // ลบคอมเมนต์
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])
+        ->name('comments.destroy');
+
+    /*
+    |-------------------- ปฏิกิริยา like / dislike --------------------
+    */
+
+    // ปฏิกิริยากับโพสต์
+    Route::post('/threads/{slug}/react', [PostController::class, 'react'])
+        ->name('posts.react');
+
+    // ปฏิกิริยากับคอมเมนต์
+    Route::post('/comments/{comment}/react', [CommentReactionController::class, 'toggle'])
+        ->name('comments.react');
+});
 
 /*
 |--------------------------------------------------------------------------
 | Public: ดูกระทู้เดี่ยว
 |--------------------------------------------------------------------------
 |
-| ต้องวาง "หลัง" /threads/create เสมอ
+| ต้องวาง **หลัง** /threads/create และ route อื่น ๆ ที่เป็น path คงที่
 |
 */
 
 Route::get('/threads/{slug}', [PostController::class, 'show'])->name('posts.show');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -62,20 +100,20 @@ Route::middleware(['auth', 'role:admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
+
         Route::get('/', fn () => view('admin.dashboard'))->name('dashboard');
 
-        // หน้า list กระทู้แอดมิน
+        // list กระทู้ฝั่งแอดมิน
         Route::get('/posts', [AdminPostController::class, 'index'])->name('posts.index');
 
-        // ปุ่มสลับสถานะ เปิด/ปิดการเผยแพร่
+        // toggle สถานะเผยแพร่
         Route::patch('/posts/{post}/toggle', [AdminPostController::class, 'toggleStatus'])
             ->name('posts.toggle');
     });
 
-
 /*
 |--------------------------------------------------------------------------
-| Auth (Breeze)
+| Auth routes (Breeze)
 |--------------------------------------------------------------------------
 */
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
