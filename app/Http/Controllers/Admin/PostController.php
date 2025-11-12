@@ -4,99 +4,79 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Post;
-use App\Models\Announcement; // ✅ เพิ่ม: ใช้งานตารางประกาศ
 use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
-    // แสดงรายการกระทู้ทั้งหมด (เน้นที่ pending ด้านบน) + แสดงประชาสัมพันธ์
-    public function index()
+    /**
+     * แสดงโพสต์ฝั่งแอดมิน: แยก Pending / Published
+     */
+    public function index(Request $request)
     {
-        $pendingPosts = Post::with('author')
+        // รออนุมัติ
+        $pending = Post::query()
+            ->with(['author'])
             ->where('is_published', false)
-        // ----- กระทู้ -----
-        $pending = Post::where('is_published', false)
             ->latest()
-            ->get();
+            ->paginate(10, ['*'], 'pending_page');
 
-        $publishedPosts = Post::with('author')
+        // เผยแพร่แล้ว
+        $published = Post::query()
+            ->with(['author'])
+            ->withCount([
+                'comments',
+                'reactions as likes_count' => function ($q) {
+                    $q->where('type', 'like');
+                },
+                'reactions as dislikes_count' => function ($q) {
+                    $q->where('type', 'dislike');
+                },
+            ])
             ->where('is_published', true)
             ->latest()
-            ->get();
+            ->paginate(10, ['*'], 'published_page');
 
-        return view('admin.posts.index', compact('pendingPosts', 'publishedPosts'));
+        return view('admin.posts.index', [
+            'pending'   => $pending,
+            'published' => $published,
+        ]);
     }
 
+    /**
+     * อนุมัติโพสต์ (ร่าง -> เผยแพร่)
+     */
+    public function approve(Post $post)
+    {
+        $post->forceFill(['is_published' => true])->save();
+
+        return back()->with('success', 'อนุมัติโพสต์แล้ว');
+    }
+
+    /**
+     * Toggle สถานะเผยแพร่
+     */
     public function toggleStatus(Post $post)
     {
         $post->is_published = ! $post->is_published;
         $post->save();
 
-        return back()->with(
-            'success',
-            $post->is_published
-                ? 'อนุมัติและเผยแพร่กระทู้เรียบร้อยแล้ว'
-                : 'ซ่อนกระทู้ออกจากหน้าเว็บเรียบร้อยแล้ว'
-        );
-        // ----- ประชาสัมพันธ์ -----
-        // รายการรอเผยแพร่ (โชว์สั้น ๆ พอเห็นภาพรวม)
-        $annPending = Announcement::query()
-            ->where('is_published', false)
-            ->orderByDesc('created_at')
-            ->take(8)
-            ->get();
-
-        // รายการเผยแพร่แล้ว (มีเพจจิเนชันแยก ไม่ชนกับของโพสต์)
-        $annPublished = Announcement::query()
-            ->where('is_published', true)
-            ->orderByDesc('published_at')
-            ->orderByDesc('created_at')
-            ->paginate(10, ['*'], 'announcements_page'); // ใช้ชื่อ page แยก
-
-        return view('admin.posts.index', compact(
-            'pending',
-            'published',
-            'annPending',
-            'annPublished'
-        ));
+        return back()->with('success', 'อัปเดตสถานะเรียบร้อย');
     }
 
-    // อนุมัติให้โพสต์ไปหน้าบ้าน
-    public function approve(Post $post)
-    {
-        $post->update(['is_published' => true]);
-
-        return back()->with('success', 'อนุมัติกระทู้เรียบร้อยแล้ว');
-    }
-
-    // ที่เหลือเอาแบบเรียบๆ ไว้เผื่อใช้ทีหลัง
-
-    public function create()
-    {
-        return view('admin.posts.create');
-    }
-
-    public function store(Request $request)
-    {
-        // ถ้ายังไม่ใช้ ไม่ต้องทำอะไร
-        abort(404);
-    }
-
-    public function edit(Post $post)
-    {
-        return view('admin.posts.edit', compact('post'));
-    }
-
-    public function update(Request $request, Post $post)
-    {
-        // ยังไม่ทำ ก็กันไว้เฉยๆ
-        abort(404);
-    }
-
+    /**
+     * ลบโพสต์
+     */
     public function destroy(Post $post)
     {
         $post->delete();
 
-        return back()->with('success', 'ลบกระทู้แล้ว');
+        return back()->with('success', 'ลบโพสต์แล้ว');
     }
+
+    // เมธอดที่ยังไม่ใช้ ให้ 404 ไว้ก่อน จะค่อย ๆ เติมในอนาคต
+    public function create()  { abort(404); }
+    public function store()   { abort(404); }
+    public function edit()    { abort(404); }
+    public function update(Request $request, Post $post) { abort(404); }
+    public function show(Post $post) { abort(404); }
 }

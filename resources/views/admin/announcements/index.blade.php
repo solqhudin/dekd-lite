@@ -1,41 +1,73 @@
-{{-- @extends('layouts.navigation')
-@section('title','ประชาสัมพันธ์ • Engenius Group')
+<x-app-layout>
+    <div class="max-w-6xl mx-auto px-4 py-10">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-extrabold text-gray-900">จัดการประกาศ</h1>
+            <a href="{{ route('admin.announcements.create') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500 text-white text-sm font-semibold hover:bg-orange-600">
+                + สร้างประกาศ
+            </a>
+        </div>
 
-@section('content')
-<div class="max-w-6xl mx-auto px-4 py-10">
-  <div class="flex items-end justify-between gap-3 mb-6">
-    <div>
-      <h1 class="text-2xl font-extrabold text-gray-900">ประชาสัมพันธ์</h1>
-      <p class="text-sm text-gray-500">ข่าว/กิจกรรมที่เผยแพร่แล้ว</p>
+        @if(session('success'))
+            <div class="mb-4 px-4 py-3 rounded-xl bg-emerald-50 text-emerald-700 text-sm border border-emerald-100">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        <div class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50">
+                <tr class="text-left text-xs font-semibold text-gray-500">
+                    <th class="px-4 py-3">หัวข้อ</th>
+                    <th class="px-4 py-3 w-32">หมวด</th>
+                    <th class="px-4 py-3 w-40">สถานะ</th>
+                    <th class="px-4 py-3 w-40">อัปเดต</th>
+                    <th class="px-4 py-3 w-36"></th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-sm">
+                @forelse($announcements as $a)
+                    <tr>
+                        <td class="px-4 py-3">
+                            <div class="font-semibold text-gray-900">{{ $a->title }}</div>
+                            <div class="text-xs text-gray-500">slug: {{ $a->slug }}</div>
+                        </td>
+                        <td class="px-4 py-3">{{ $a->category ?: 'ทั่วไป' }}</td>
+                        <td class="px-4 py-3">
+                            @if($a->is_published)
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                                    เผยแพร่
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    ฉบับร่าง
+                                </span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-xs text-gray-500">
+                            {{ $a->updated_at?->format('Y-m-d H:i') }}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <a href="{{ route('announcements.show', $a->slug) }}" class="text-xs text-gray-600 hover:text-gray-900 mr-3">ดูหน้า public</a>
+                            <a href="{{ route('admin.announcements.edit', $a) }}" class="text-xs text-indigo-600 hover:text-indigo-800 mr-3">แก้ไข</a>
+                            <form class="inline" method="POST" action="{{ route('admin.announcements.destroy', $a) }}"
+                                  onsubmit="return confirm('ลบประกาศนี้แน่ไหม?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="text-xs text-red-600 hover:text-red-700">ลบ</button>
+                            </form>
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td class="px-4 py-6 text-center text-gray-400" colspan="5">ยังไม่มีประกาศ</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        @if(method_exists($announcements, 'hasPages') && $announcements->hasPages())
+            <div class="mt-6">
+                {{ $announcements->onEachSide(1)->links() }}
+            </div>
+        @endif
     </div>
-    <form method="GET" action="{{ route('announcements.index') }}" class="relative">
-      <input name="q" value="{{ request('q') }}" placeholder="ค้นหา..."
-             class="w-64 rounded-full border border-gray-200 px-4 py-2 text-sm focus:border-brand-700 focus:ring-2 focus:ring-brand-700/20">
-    </form>
-  </div>
-
-  @if($announcements->count())
-    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      @foreach($announcements as $a)
-        <a href="{{ route('announcements.show', $a->slug) }}"
-           class="block p-4 rounded-2xl border border-gray-100 bg-white shadow-[0_6px_18px_rgba(0,0,0,.05)] hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgba(0,0,0,.08)] transition">
-          @if($a->cover_image)
-            <img src="{{ asset('storage/'.$a->cover_image) }}"
-                 class="w-full h-36 object-cover rounded-xl mb-3" alt="">
-          @endif
-          <div class="text-xs text-gray-500">{{ $a->category ?: 'ทั่วไป' }}</div>
-          <h2 class="mt-1 font-semibold text-gray-900 line-clamp-2">{{ $a->title }}</h2>
-          <p class="mt-1 text-sm text-gray-600 line-clamp-2">{{ $a->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($a->body), 120) }}</p>
-          <div class="mt-2 text-xs text-gray-400">
-            เผยแพร่: {{ optional($a->published_at)->format('Y-m-d H:i') ?: '-' }}
-          </div>
-        </a>
-      @endforeach
-    </div>
-
-    <div class="mt-6">{{ $announcements->links() }}</div>
-  @else
-    <div class="mt-10 text-center text-gray-500">ยังไม่มีประกาศ</div>
-  @endif
-</div>
-@endsection --}}
+</x-app-layout>
