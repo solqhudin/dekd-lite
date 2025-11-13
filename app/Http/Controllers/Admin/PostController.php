@@ -4,29 +4,71 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Post;
-use App\Models\Announcement; // ✅ เพิ่ม: ใช้งานตารางประกาศ
+use App\Models\Announcement; // ใช้งานตารางประกาศ
 use Illuminate\Http\Request;
 
 class PostController extends Controller
 {
-    // แสดงรายการกระทู้ทั้งหมด (เน้นที่ pending ด้านบน) + แสดงประชาสัมพันธ์
+    /**
+     * แสดงหน้าแอดมิน: รวมทั้งกระทู้ (pending/published) และประชาสัมพันธ์ (pending/published)
+     */
     public function index()
     {
+        // ----- กระทู้ -----
+        // รออนุมัติ (ไม่ต้อง paginate ก็ได้ เอาแบบ list เต็ม)
         $pendingPosts = Post::with('author')
             ->where('is_published', false)
-        // ----- กระทู้ -----
-        $pending = Post::where('is_published', false)
             ->latest()
             ->get();
 
+        // เผยแพร่แล้ว (paginate)
         $publishedPosts = Post::with('author')
             ->where('is_published', true)
             ->latest()
+            ->paginate(15, ['*'], 'posts_page');
+
+        // เพื่อความเข้ากันได้กับ view เดิมที่เคยใช้ $pending / $published
+        $pending   = $pendingPosts;
+        $published = $publishedPosts;
+
+        // ----- ประชาสัมพันธ์ -----
+        // รอเผยแพร่ (โชว์สั้น ๆ)
+        $annPending = Announcement::query()
+            ->where('is_published', false)
+            ->orderByDesc('created_at')
+            ->take(8)
             ->get();
 
-        return view('admin.posts.index', compact('pendingPosts', 'publishedPosts'));
+        // เผยแพร่แล้ว (paginate แยก page name)
+        $annPublished = Announcement::query()
+            ->where('is_published', true)
+            ->orderByDesc('published_at')
+            ->orderByDesc('created_at')
+            ->paginate(10, ['*'], 'announcements_page');
+
+        return view('admin.posts.index', compact(
+            'pendingPosts',
+            'publishedPosts',
+            'pending',
+            'published',
+            'annPending',
+            'annPublished'
+        ));
     }
 
+    /**
+     * อนุมัติให้โพสต์ไปหน้าบ้าน (คงไว้ตามที่คุณใช้)
+     */
+    public function approve(Post $post)
+    {
+        $post->update(['is_published' => true]);
+
+        return back()->with('success', 'อนุมัติกระทู้เรียบร้อยแล้ว');
+    }
+
+    /**
+     * สลับสถานะเผยแพร่/ซ่อนกระทู้ (ถ้าคุณมีปุ่ม toggle)
+     */
     public function toggleStatus(Post $post)
     {
         $post->is_published = ! $post->is_published;
@@ -38,38 +80,9 @@ class PostController extends Controller
                 ? 'อนุมัติและเผยแพร่กระทู้เรียบร้อยแล้ว'
                 : 'ซ่อนกระทู้ออกจากหน้าเว็บเรียบร้อยแล้ว'
         );
-        // ----- ประชาสัมพันธ์ -----
-        // รายการรอเผยแพร่ (โชว์สั้น ๆ พอเห็นภาพรวม)
-        $annPending = Announcement::query()
-            ->where('is_published', false)
-            ->orderByDesc('created_at')
-            ->take(8)
-            ->get();
-
-        // รายการเผยแพร่แล้ว (มีเพจจิเนชันแยก ไม่ชนกับของโพสต์)
-        $annPublished = Announcement::query()
-            ->where('is_published', true)
-            ->orderByDesc('published_at')
-            ->orderByDesc('created_at')
-            ->paginate(10, ['*'], 'announcements_page'); // ใช้ชื่อ page แยก
-
-        return view('admin.posts.index', compact(
-            'pending',
-            'published',
-            'annPending',
-            'annPublished'
-        ));
     }
 
-    // อนุมัติให้โพสต์ไปหน้าบ้าน
-    public function approve(Post $post)
-    {
-        $post->update(['is_published' => true]);
-
-        return back()->with('success', 'อนุมัติกระทู้เรียบร้อยแล้ว');
-    }
-
-    // ที่เหลือเอาแบบเรียบๆ ไว้เผื่อใช้ทีหลัง
+    // ---------- ส่วนที่เหลือคงไว้เรียบ ๆ ตามเดิม ----------
 
     public function create()
     {

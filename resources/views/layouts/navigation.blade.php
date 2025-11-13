@@ -36,19 +36,28 @@
   <nav x-data="{ open:false }" class="bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between h-16">
+
         {{-- Left: Logo + Main Nav (Desktop) --}}
         <div class="flex items-center gap-8">
           {{-- Logo --}}
           <div class="shrink-0 flex items-center">
             <a href="{{ route('home') }}" class="flex items-center gap-2">
-              {{-- ใช้ component หรือรูปภาพ เลือกอย่างใดอย่างหนึ่ง --}}
-              {{-- <x-application-logo class="block h-8 w-auto text-orange-500" /> --}}
               <img src="{{ asset('images/logo.png') }}" class="h-8 w-auto" alt="Logo">
-              <span class="hidden sm:inline text-sm font-semibold tracking-wide text-gray-800">
-                Dek-Due
-              </span>
             </a>
           </div>
+
+          @php
+              // ✅ กำหนดปลายทางของ "เกี่ยวกับเรา":
+              // - ถ้าเป็นแอดมิน -> ไปหน้าแอดมิน /admin/about (route: admin.about.index)
+              // - ถ้าเป็นผู้ใช้ทั่วไป/ยังไม่ล็อกอิน -> ไปหน้า public /about (route: about.index)
+              $aboutHref = route(
+                  (auth()->check() && auth()->user()->hasRole('admin'))
+                      ? 'admin.about.index'
+                      : 'about.index'
+              );
+              // สถานะ Active (ครอบคลุมทั้ง about.* และ admin.about.*)
+              $aboutActive = request()->routeIs('about.*') || request()->routeIs('admin.about.*');
+          @endphp
 
           {{-- Desktop Nav Links --}}
           <div class="hidden sm:flex items-center gap-6 text-sm font-medium">
@@ -70,8 +79,10 @@
               ประชาสัมพันธ์
             </a>
 
-            <a href="#" class="inline-flex items-center border-b-2 px-1.5 pb-1
-                 {{ request()->routeIs('about') ? 'border-brand-700 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-200' }}">
+            {{-- ✅ เกี่ยวกับเรา (ลิงก์แบบมีเงื่อนไข) --}}
+            <a href="{{ $aboutHref }}"
+               class="inline-flex items-center border-b-2 px-1.5 pb-1
+                    {{ $aboutActive ? 'border-brand-700 text-brand-700' : 'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-200' }}">
               เกี่ยวกับเรา
             </a>
 
@@ -166,6 +177,10 @@
         <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">หน้าแรก</x-responsive-nav-link>
         <x-responsive-nav-link :href="route('posts.index')" :active="request()->routeIs('posts.*')">กระทู้</x-responsive-nav-link>
         <x-responsive-nav-link :href="route('announcements.index')" :active="request()->routeIs('announcements.*')">ประชาสัมพันธ์</x-responsive-nav-link>
+
+        {{-- ✅ เกี่ยวกับเรา (ลิงก์แบบมีเงื่อนไข) --}}
+        <x-responsive-nav-link :href="$aboutHref" :active="$aboutActive">เกี่ยวกับเรา</x-responsive-nav-link>
+
         @auth
           @if(auth()->user()->hasRole('admin'))
             <x-responsive-nav-link :href="route('admin.posts.index')" :active="request()->routeIs('admin.*')">แอดมิน</x-responsive-nav-link>

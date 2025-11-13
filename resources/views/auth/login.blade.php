@@ -13,17 +13,15 @@
 
   <div class="relative z-10 text-white w-full">
     {{-- โลโก้กึ่งกลาง --}}
-    <div class="mb-6 flex flex-col items-center">
-      <img
-        src="{{ asset('images/logo.png') }}"
-        alt="Engenius Group"
-        class="h-16 w-auto object-contain mx-auto select-none"
-        loading="eager"
-        decoding="async"
-        onerror="this.style.opacity=0.3"
-      />
-      {{-- <span class="mt-2 text-sm tracking-wide text-white/90">Engenius Group</span>  --}}
-    </div>
+   <img
+  src="{{ asset('images/logoWhite.png') }}"
+  alt="Engenius Group"
+  class="h-20 md:h-28 xl:h-32 w-auto object-contain mx-auto select-none"
+  loading="eager"
+  decoding="async"
+  onerror="this.style.opacity=0.3"
+/>
+
 
     <h1 class="text-4xl md:text-5xl font-extrabold drop-shadow-sm text-center">ยินดีต้อนรับ</h1>
     <p class="mt-3 max-w-md text-white/90 mx-auto text-center">

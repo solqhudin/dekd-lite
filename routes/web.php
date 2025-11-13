@@ -5,8 +5,11 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CommentReactionController;
+use App\Http\Controllers\AboutController as PublicAboutController;
+/* controllers for admin */
 use App\Http\Controllers\Admin\AnnouncementController;
 use App\Http\Controllers\Admin\PostController as AdminPostController;
+use App\Http\Controllers\Admin\AboutController as AdminAboutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,6 +19,12 @@ use App\Http\Controllers\Admin\PostController as AdminPostController;
 
 Route::get('/', [PostController::class, 'index'])->name('home');
 Route::get('/threads', [PostController::class, 'index'])->name('posts.index');
+
+/* about page */
+// Route::view('/about', 'about.index')->name('about');
+
+/* ---------- Public: เกี่ยวกับเรา ---------- */
+Route::get('/about', [PublicAboutController::class, 'index'])->name('about.index');
 
 /*
 |--------------------------------------------------------------------------
@@ -113,12 +122,34 @@ Route::middleware(['auth', 'role:admin'])
     });
 
 
+/* ---------- Admin: เกี่ยวกับเรา (Index/Create/Edit/Update) ---------- */
+
+Route::middleware(['auth','role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        // ✅ หน้า index (สำหรับแอดมิน) — ใช้แสดงรายการ/สถานะ และมีปุ่ม Create
+        Route::get('about', [AdminAboutController::class, 'index'])->name('about.index');
+
+        // ฟอร์มสร้าง + บันทึก
+        Route::get('about/create', [AdminAboutController::class, 'create'])->name('about.create');
+        Route::post('about',        [AdminAboutController::class, 'store'])->name('about.store');
+
+        // ฟอร์มแก้ไข + อัปเดต (ใช้ {about} เป็น route model binding ของ AboutSetting)
+        Route::get('about/{about}/edit', [AdminAboutController::class, 'edit'])->name('about.edit');
+        Route::put('about/{about}',      [AdminAboutController::class, 'update'])->name('about.update');
+    });
+
+
 /* ---------- Public: ประชาสัมพันธ์ ---------- */
 Route::get('/announcements', [AnnouncementController::class, 'publicIndex'])
     ->name('announcements.index');
 
 Route::get('/announcements/{announcement:slug}', [AnnouncementController::class, 'publicShow'])
     ->name('announcements.show');
+
+Route::patch('/admin/announcements/{announcement}/publish', [AnnouncementController::class, 'publish'])
+    ->name('admin.announcements.publish');
 
 /* ---------- Admin: จัดการประกาศ ---------- */
 Route::middleware(['auth', 'can:manage-announcements'])->group(function () {

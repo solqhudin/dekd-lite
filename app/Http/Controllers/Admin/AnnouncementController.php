@@ -34,6 +34,17 @@ class AnnouncementController extends Controller
         return view('admin.announcements.public-show', compact('announcement'));
     }
 
+    public function publish(Announcement $announcement)
+{
+    $announcement->update(['is_published' => true]);
+
+    // ถ้าต้องการให้กลับไปหน้าโพสต์รวม
+    // return redirect('/admin/posts')->with('success', 'เผยแพร่ประกาศเรียบร้อย');
+
+    // หรือกลับหน้าปัจจุบัน
+    return back()->with('success', 'เผยแพร่ประกาศเรียบร้อย');
+}
+
     /* ------------------- ADMIN ------------------- */
     public function index(Request $request)
     {
@@ -77,8 +88,7 @@ class AnnouncementController extends Controller
 
         $a = Announcement::create($data);
 
-        return redirect()->route('announcements.show', $a->slug)
-            ->with('success','เผยแพร่ประกาศเรียบร้อยแล้ว');
+         return redirect('/admin/posts')->with('success', 'บันทึกประกาศเรียบร้อย');
     }
 
     public function edit(Announcement $announcement)
@@ -112,8 +122,7 @@ class AnnouncementController extends Controller
 
         $announcement->update($data);
 
-        return redirect()->route('announcements.show', $announcement->slug)
-            ->with('success','บันทึกการเปลี่ยนแปลงแล้ว');
+       return redirect('/admin/posts')->with('success', 'อัปเดตประกาศเรียบร้อย');
     }
 
     public function destroy(Announcement $announcement)
